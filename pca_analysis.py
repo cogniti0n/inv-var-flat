@@ -9,15 +9,17 @@ cutoff_epoch = CONFIGS["cutoff_epoch"]
 
 print("Loading weight trajectory...")
 try:
-    weight_trajectory = np.load('data/weight_trajectory.npy')
-    batch_size = int(np.load('data/batches_per_epoch.npy')[0])
-    assert batch_size == CONFIGS["batch_size"]
+    weight_trajectory = np.load('./data/weight_trajectory.npy')
+    batch_size = CONFIGS["batch_size"]
 except FileNotFoundError:
     raise FileNotFoundError("'data/weight_trajectory.npy' not found.")
 
 print(f"Weight data shape: {weight_trajectory.shape}")
 
-cutoff_idx = batch_size * cutoff_epoch
+train_dataset_size = 60000 # MNIST
+batches_per_epoch = int(np.ceil(train_dataset_size / batch_size))
+
+cutoff_idx = batches_per_epoch * cutoff_epoch
 if cutoff_idx >= len(weight_trajectory):
     raise ValueError("Epochs to cut off is too large")
 exploration_trajectory = weight_trajectory[cutoff_idx:]
@@ -28,7 +30,7 @@ print(f"Saved mean weight vector of shape: {mean_weight.shape}")
 
 print(f"\nPerforming PCA for {num_components} components...")
 pca = PCA(n_components=num_components)
-pca.fit(weight_trajectory)
+pca.fit(exploration_trajectory)
 
 components = pca.components_
 variances = pca.explained_variance_
