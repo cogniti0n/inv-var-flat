@@ -7,6 +7,6 @@ CONFIGS = {
     "learning_rate": 0.1,
     "batch_size": 64,
     "num_components": 500,
-    "loss_sample_batch_size": 100,
+    "loss_sample_batch_size": 5000,
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu")
 }
