@@ -6,7 +6,10 @@ import numpy as np
 import os
 
 from configs import CONFIGS
-print("Using device: ", CONFIGS["device"])
+device = CONFIGS["device"]
+batch_size = CONFIGS["batch_size"]
+
+print(f"Using device: {device}")
 
 if not os.path.exists('data'):
     os.makedirs('data')
@@ -25,38 +28,36 @@ train_loader = torch.utils.data.DataLoader(
     shuffle=True
 )
 
-model = MLP(input_dim=28*28, hidden_dim=50, output_dim=10).to(CONFIGS["device"])
+model = MLP(input_dim=28*28, hidden_dim=50, output_dim=10).to(device)
 optimizer = optim.SGD(model.parameters(), lr=CONFIGS["learning_rate"])
 criterion = nn.CrossEntropyLoss()
 
 weight_trajectory = []
 
-print("Starting training...")
+print("Starting training")
 for epoch in range(1, CONFIGS["epochs"] + 1):
 
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(CONFIGS["device"]), target.to(CONFIGS["device"])
+
+        data, target = data.to(device), target.to(device)
 
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
-
-        if epoch >= CONFIGS["exploration_epoch"]:
-            
-            weights = model.fc2.weight.data.clone().detach().cpu().numpy()
-            weight_trajectory.append(weights.flatten())
-
+    
+        weights = model.fc2.weight.data.clone().detach().cpu().numpy()
+        weight_trajectory.append(weights.flatten())
+    
     print(f'Epoch {epoch}/{CONFIGS["epochs"]}, Loss: {loss.item():.4f}')
 
-
-print("\nsaving weight trajectory")
-weight_trajectory_np = np.array(weight_trajectory)  
+weight_trajectory_np = np.array(weight_trajectory)
 np.save('data/weight_trajectory.npy', weight_trajectory_np)
 
 torch.save(model.state_dict(), 'data/final_model.pth')
 
-print(f"weight trajectory shape: {weight_trajectory_np.shape}")
+print(f"Weight trajectory shape: {weight_trajectory_np.shape}")
+print(f"batch size: {batch_size}")
