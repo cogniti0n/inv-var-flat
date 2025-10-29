@@ -8,9 +8,17 @@ import os
 import argparse
 
 from dataload.data import DATASETS
+from utils import get_proj_directory
 
 def main(
-        dataset: str="mnist"
+        proj: str|None=None,
+        dataset: str="mnist",
+        arch_id: str|None="fc",
+        loss: str|None=None,
+        opt: str|None=None,
+        lr: float|None=None,
+        max_steps: int|None=None,
+        start_step: int|None=None,
 ):
     pass
 

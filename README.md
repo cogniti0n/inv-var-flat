@@ -1,9 +1,7 @@
-# Inverse Variance-Flatness Relation in SGD
+# Does SGD really happen in large variance subspaces?
+
+A large part of this repository is based on the GitHub repository at https://github.com/locuslab/edge-of-stability to replicate the experimental setup described in [Cohen et al. (2021)](https://openreview.net/forum?id=jh-rTtvkGeM).
 
 ## Project Overview
 
-This is a reproduction of
-
-- Feng, Y., & Tu, Y. (2021). The inverse variance-flatness relation in stochastic gradient descent is critical for finding flat minima. Proceedings of the National Academy of Sciences of the United States of America, 118(9), e2015617118.
-
-*Currently incomplete!*
+Get the top PCA directions of the last few epochs, and project the training onto these directions.
