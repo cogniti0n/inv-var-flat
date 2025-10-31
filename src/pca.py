@@ -9,6 +9,7 @@ def get_pca_directions(
         num_components: int,
         cutoff_start_idx: int,
         cutoff_end_idx: int|None=None,
+        discard: bool=False
 ) -> Tuple[Tensor, Tensor]:
     
     try:
@@ -25,8 +26,12 @@ def get_pca_directions(
     components = pca.components_
     variances = pca.explained_variance_
 
-    # discard top variance
-    components_diffusive = torch.from_numpy(components[1:])
-    variances_diffusive = torch.from_numpy(variances[1:])
+    components, variances = torch.from_numpy(components), torch.from_numpy(variances)
 
-    return components_diffusive, variances_diffusive
+    # discard top variance
+    if discard:
+        components_diffusive = components[1:]
+        variances_diffusive = variances[1:]
+        return components_diffusive, variances_diffusive
+    else:
+        return components, variances
