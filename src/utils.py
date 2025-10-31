@@ -121,7 +121,7 @@ def compute_losses(network: nn.Module, loss_functions: List[nn.Module], dataset:
     return losses
 
 
-def get_loss_and_acc(loss: str):
+def get_loss_and_acc(loss: str) -> Tuple[nn.Module, nn.Module]:
     """
     Return modules to compute the loss and accuracy.  The loss module should be "sum" reduction.
     """

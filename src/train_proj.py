@@ -14,6 +14,7 @@ from dataload.data import load_dataset, DATASETS
 
 from archs import load_architecture
 from utils import get_proj_directory, get_optimizer, get_loss_and_acc, compute_losses, save_files, save_files_final, compute_gradient
+from pca import init_weight_window, insert_into_window, get_ordered_window, get_pca_directions
 
 def main(
         proj: str,
@@ -28,9 +29,10 @@ def main(
         rho: float = 0,
         max_steps: int = 10000,
         start_step: int = 0,
-        num_directions_pca: int = 0,
-        num_directions_pca_dom: int = 0,
-        num_save_window: int = 0,
+        window_track_start_step: int = 0,
+        num_components_pca: int = 0,
+        num_components_pca_dom: int = 0,
+        window_size: int = 0,
         physical_batch_size: int = 1000,
         save_freq: int = -1,
         save_model: bool = False,
@@ -40,6 +42,8 @@ def main(
         gpu_id: int = 0
     ):
     
+    assert window_track_start_step + window_size < start_step
+
     torch.cuda.set_device(gpu_id)
 
     directory = get_proj_directory(
@@ -58,6 +62,11 @@ def main(
     network = load_architecture(arch_id, dataset).cuda()
     if save_model:
         torch.save(network.state_dict(), f"{directory}/snapshot_init")
+
+    weight_window, n_params = init_weight_window(network, window_size)
+    weight_window = weight_window.cuda()
+    window_pointer = 0
+    window_filled = 0
 
     optimizer = get_optimizer(network.parameters(), opt, lr, beta, rho)
 
@@ -103,10 +112,17 @@ def main(
             else:
                 optimizer.step()
             
-            if step >= start_step:
+            if step >= window_track_start_step:
                 with torch.no_grad():
                     params_vec_next = parameters_to_vector(network.parameters()).cuda()
-                    update = params_vec_next - params_vec
+                    window_pointer = insert_into_window(weight_window,
+                                                        params_vec_next, window_pointer)
+                    window_filled = min(window_filled + 1, window_size)
+            
+            if step >= start_step:
+                with torch.no_grad():
+                    pca_components, pca_variances = get_pca_directions(weight_window, num_components_pca)
+
 
             if save_freq != -1 and step % save_freq == 0:
                 save_files(
@@ -171,10 +187,10 @@ if __name__ == "__main__":
                         help="terminate training if the train accuracy ever crosses this value", default=1)
     parser.add_argument("--loss_goal", type=float,
                         help="terminate training if the train loss ever crosses this value", default=0)
-    parser.add_argument("--num_directions_pca", type=int,
-                        help="the number of PCA directions to compute")
-    parser.add_argument("--num_directions_pca_dom", type=int,
-                        help="the number of dominant top PCA directions")
+    parser.add_argument("--num_components_pca", type=int,
+                        help="the number of PCA components to compute")
+    parser.add_argument("--num_components_pca_dom", type=int,
+                        help="the number of dominant top PCA components")
     parser.add_argument("--save_freq", type=int, default=-1,
                         help="the frequency at which we save results")
     parser.add_argument("--save_model", type=bool, default=False,
@@ -185,5 +201,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        proj=args.proj, dataset=args.dataset, arch_id=args.arch_id, loss=args.loss, opt=args.opt, lr=args.lr, batch_size=args.batch_size, beta=args.beta, rho=args.rho, max_steps=args.max_steps, start_step=args.start_step, num_directions_pca=args.num_directions_pca, num_directions_pca_dom=args.num_directions_pca_dom, physical_batch_size=args.physical_batch_size, save_freq=args.save_freq, save_model=args.save_model, loss_goal=args.loss_goal, acc_goal=args.acc_goal, seed=args.seed, gpu_id=args.gpu_id
+        proj=args.proj, dataset=args.dataset, arch_id=args.arch_id, loss=args.loss, opt=args.opt, lr=args.lr, batch_size=args.batch_size, beta=args.beta, rho=args.rho, max_steps=args.max_steps, start_step=args.start_step, num_components_pca=args.num_components_pca, num_components_pca_dom=args.num_components_pca_dom, physical_batch_size=args.physical_batch_size, save_freq=args.save_freq, save_model=args.save_model, loss_goal=args.loss_goal, acc_goal=args.acc_goal, seed=args.seed, gpu_id=args.gpu_id
     )
